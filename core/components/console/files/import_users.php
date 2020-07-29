@@ -61,7 +61,6 @@ while (($csv = fgetcsv($handle, 0, $delimeter)) !== false) {
     
     $modx->log(modX::LOG_LEVEL_INFO, "Importing user ". $properties['username']);
     
-    $properties['groups'] = $default_groups;
     $properties['active'] = 1;
     
     if ($properties['discipline']) {
@@ -83,52 +82,7 @@ while (($csv = fgetcsv($handle, 0, $delimeter)) !== false) {
     
     $rows ++;
     $modx->error->reset();
-    
-    // Creating user group and resorce group if it doesn't exist
-    if (!$usergroup = $modx->getObject("modUserGroup", ['name' => 'profile_' . $properties['username']])) {
-        $response = $modx->runProcessor('security/group/create', [
-            'name' => 'profile_' . $properties['username'],
-        ]);
-        
-        // If error switch to another user
-        if ($response->isError()) {
-            $modx->log(modX::LOG_LEVEL_ERROR, "Error on group creation: \n" . print_r($response->getFieldErrors(), 1));
-            continue;
-        }
-        
-        $usergroup = $response->getObject();
-        $userfroup_id = $usergroup['id'];
-    } else {
-        $usergroup_id = $usergroup->get('id');
-    }
-    
-    $properties['groups'][] = [
-        'usergroup' => $usergroup_id,
-        'role' => 1,
-        'rank' => 9999
-    ];
-    
-    
-    // Creating resource group for a user
-    if (!$resourcegroup = $modx->getObject('modResourceGroup', ['name' => 'profile_' . $properties['username']])) {
-        $response = $modx->runProcessor('security/resourcegroup/create', [
-            'name' => 'profile_' . $properties['username'],
-            'access_contexts' => 'mgr',
-            'access_usergroups' => 'profile_' . $properties['username']
-        ]);
-        
-        // If error switch to another user
-        if ($response->isError()) {
-            $modx->log(modX::LOG_LEVEL_ERROR, "Error on resource group creation: \n" . print_r($response->getFieldErrors(), 1));
-            continue;
-        }
-        
-        $resourcegroup = $response->getObject();
-    }
-    
-    $resourcegroup = is_object($resourcegroup) ? $resourcegroup->toArray() : $resourcegroup;
-    
-    
+
     $modx->log(modX::LOG_LEVEL_INFO, "User properties are: \n". print_r($properties,1));
     
     // If user exists then update it
@@ -155,57 +109,6 @@ while (($csv = fgetcsv($handle, 0, $delimeter)) !== false) {
     }
     
     $modx->log(modX::LOG_LEVEL_INFO, "The result of " . $action . " for user " . $properties['username'] . " \n" . print_r($properties, 1) . " is \n" . print_r($response->getObject(), 1));
-    
-    // Create user profile resource page with username alias. If user profile exists assign it a user's resource group
-    if ($resource = $modx->getObject('modResource', ['alias' => $properties['username']])) {
-        $modx->log(modX::LOG_LEVEL_INFO, 'Found resource with alias ' . $properties['username']);
-        
-        if (!$resource->isMember('profile_' . $resource->get('alias'))) {
-            $response = $modx->runProcessor('security/resourcegroup/updateresourcesin', ['resource' => 'web_' . $resource->get('id'), 'resourceGroup' => 'n_dg_' . $resourcegroup['id']]);
-            
-            if ($response->isError()) {
-                $modx->log(modX::LOG_LEVEL_ERROR, "Can't add access to user profile: " . print_r($response->getObject(), 1));
-            }
-        } else {
-            $modx->log(modX::LOG_LEVEL_INFO, 'User ' . $properties['username'] . ' already has access to profile.');
-        }
-        
-        
-    } else {
-        // Create profile page and add it to user resource gorup for allowing access
-        $userresource_group = [
-            [
-                'id' => 1,
-                'name' => 'Admin',
-                'access' => true,
-                'menu' => null
-            ],
-            [
-                'id' => $resourcegroup['id'],
-                'name' => $resourcegroup['name'],
-                'access' => true,
-                'menu' => null
-            ]
-        ];
-        
-        
-        $resource = [
-            'pagetitle' => $properties['fullname'],
-            'alias' => $properties['username'],
-            'parent' => $profile_root,
-            'profile template_id' => $profile_template_id,
-            'published' => 1,
-            'class_key' => 'mgResource',
-            'resource_groups' => json_encode($userresource_group)];
-            
-        $response = $modx->runProcessor('resource/create', $resource);
-        
-        if ($response->isError()) {
-            $modx->log(modX::LOG_LEVEL_ERROR, "Can't create profile page for user: " . print_r($response->getObject(), 1));
-        }
-    }
-    
-    
     
 }
 
