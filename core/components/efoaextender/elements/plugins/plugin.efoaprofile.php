@@ -115,10 +115,15 @@ switch ($modx->event->name) {
                 ]
             ];
 
-
+            // Set the pagetitle and longtitle to the fullname
+            // Set the alias to the lowercase fullname replacing spaces with hyphens
+            // Change parent to be Artists parent ID
+            // template_id
+            $resource_alias = strtolower(str_replace(" ", "-", $user->get('username')));
             $resource = [
                 'pagetitle' => $user->get('fullname'),
-                'alias' => $user->get('username'),
+                'longtitle' => $user->get('fullname'),
+                'alias' => $resource_alias,
                 'parent' => 2,
                 'profile template_id' => 1,
                 'published' => 1,
@@ -328,9 +333,18 @@ switch ($modx->event->name) {
                             id: (config.name || "discipline") + "-store"
                             ,fields: ["display"]
                             ,data: [
-                                ["Modern"]
-                                ,["Classic"]
-                                ,["Street Art"]
+                                ["Painting"]
+                                ,["Ceramics"]
+                                ,["Photography"]
+                                ,["Sculpture"]
+                                ,["Printing"]
+                                ,["Jewellery"]
+                                ,["Glass"]
+                                ,["Textiles"]
+                                ,["Mixed Media"]
+                                ,["Digital Art"]
+                                ,["Film"]
+                                ,["Other Media"]
                             ]
                         })
                         ,mode: "local"
