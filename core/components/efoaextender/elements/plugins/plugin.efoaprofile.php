@@ -35,16 +35,6 @@ switch ($modx->event->name) {
 
         $u_group = is_object($u_group) ? $u_group->toArray() : $u_group;
 
-        // Add membership to user's group
-        $membership = $modx->newObject('modUserGroupMember');
-        $membership->fromArray(array(
-            'user_group' => $u_group['id'],
-            'role' => 1,
-            'member' => $user->get('id'),
-            'rank' => 9999
-        ));
-        $membership->save();
-
 
 
         $resourcegroup = [
@@ -68,28 +58,28 @@ switch ($modx->event->name) {
 
         // Add membership to defualt group and resource to user group mapping
         if ($policy = $modx->getObject('modAccessPolicy',array('name' => 'EFOA Resource'))) {
-
-            $acl = $modx->newObject('modAccessResourceGroup');
-            $acl->fromArray(array(
-                'context_key' => 'mgr',
-                'target' => $r_group['id'],
-                'principal_class' => 'modUserGroup',
+            $response = $modx->runProcessor('security/access/usergroup/resourcegroup/create', [
                 'principal' => $u_group['id'],
+                'principal_class' => 'modUserGroup',
+                'target' => $r_group['id'],
+                'context_key' => 'mgr',
                 'authority' => 9999,
-                'policy' => $policy->get('id'),
-            ));
-            $acl->save();
+                'policy' => $policy->get('id')
+            ]);
+
+            if ($response->isError()) {
+                $modx->log(modX::LOG_LEVEL_ERROR, "Can't add resource group permissions: " . print_r($response->getObject(), 1));
+            }
+
+        }
 
 
-            /** @var modUserGroupMember $membership */
-            $membership = $modx->newObject('modUserGroupMember');
-            $membership->fromArray(array(
-                'user_group' => 2,
-                'role' => 1,
-                'member' => $user->get('id'),
-                'rank' => 9999
-            ));
-            $membership->save();
+        if (!$user->isMember('EFOA Content Editor')) {
+            $user->joinGroup(2, 1, 9999);
+        }
+
+        if (!$user->isMember($u_group['id'])) {
+            $user->joinGroup($u_group['id'], 1, 9999);
         }
 
 
