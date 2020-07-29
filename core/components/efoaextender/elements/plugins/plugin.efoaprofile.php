@@ -2,6 +2,8 @@
 switch ($modx->event->name) {
 
     case 'OnDocFormSave':
+
+        // Add every newly created resource to Admin group
         if ($resource->get('action') == 'resource/create') {
             $resource->joinGroup(1);
         }
@@ -10,27 +12,46 @@ switch ($modx->event->name) {
 
     case 'OnUserSave':
 
-        if ($user->get('action') == 'security/user/create') {
+        // Create a user and resource groups on user save
+        $modx->error->reset();
 
-            $modx->error->reset();
+        $usergroup = [
+            'name'  => 'profile_' . $user->get('username'),
+            'aw_users' => $user->get('username')
+        ];
 
-            $usergroup = [
-                'name'  => $user->get('username'),
-                'aw_users' => $user->get('username')
-            ];
+        // Creating user group and resorce group if it doesn't exist
+        if (!$u_group = $modx->getObject("modUserGroup", ['name' => $usergroup['name']])) {
+
             $response = $modx->runProcessor('security/group/create', $usergroup);
 
             if ($response->isError()) {
-                $modx->log(1, "Usergroup creation error: " . $response->getMessage());
+                $modx->log(modX::LOG_LEVEL_ERROR, "Error on group creation: \n" . print_r($response->getFieldErrors(), 1));
                 continue;
             }
 
             $u_group = $response->getObject();
+        }
+
+        $u_group = is_object($u_group) ? $u_group->toArray() : $u_group;
+
+        // Add membership to user's group
+        $membership = $modx->newObject('modUserGroupMember');
+        $membership->fromArray(array(
+            'user_group' => $u_group['id'],
+            'role' => 1,
+            'member' => $user->get('id'),
+            'rank' => 9999
+        ));
+        $membership->save();
 
 
-            $resourcegroup = [
-                'name' => $user->get('username'),
-            ];
+
+        $resourcegroup = [
+            'name' => 'profile_' . $user->get('username'),
+        ];
+
+        if (!$r_group = $modx->getObject('modResourceGroup', ['name' => $resourcegroup['name']])) {
             $response = $modx->runProcessor('security/resourcegroup/create', $resourcegroup);
 
             if ($response->isError()) {
@@ -40,8 +61,13 @@ switch ($modx->event->name) {
 
             $r_group = $response->getObject();
 
+        }
 
-            $policy = $modx->getObject('modAccessPolicy',array('name' => 'EFOA Resource'));
+        $r_group = is_object($r_group) ? $r_group->toArray() : $r_group;
+
+
+        // Add membership to defualt group and resource to user group mapping
+        if ($policy = $modx->getObject('modAccessPolicy',array('name' => 'EFOA Resource'))) {
 
             $acl = $modx->newObject('modAccessResourceGroup');
             $acl->fromArray(array(
@@ -64,12 +90,62 @@ switch ($modx->event->name) {
                 'rank' => 9999
             ));
             $membership->save();
+        }
 
+
+        // Create user profile resource page with username alias. If user profile exists assign it a user's resource group
+        if ($resource = $modx->getObject('modResource', ['alias' => $user->get('username')])) {
+            $modx->log(modX::LOG_LEVEL_INFO, 'Found resource with alias ' . $user->get('username'));
+
+            if (!$resource->isMember('profile_' . $resource->get('alias'))) {
+                $response = $modx->runProcessor('security/resourcegroup/updateresourcesin', ['resource' => 'web_' . $resource->get('id'), 'resourceGroup' => 'n_dg_' . $r_group['id']]);
+
+                if ($response->isError()) {
+                    $modx->log(modX::LOG_LEVEL_ERROR, "Can't add access to user profile: " . print_r($response->getObject(), 1));
+                }
+            } else {
+                $modx->log(modX::LOG_LEVEL_INFO, 'User ' . $user->get('username') . ' already has access to profile.');
+            }
+
+
+        } else {
+            // Create profile page and add it to user resource gorup for allowing access
+            $userresource_group = [
+                [
+                    'id' => 1,
+                    'name' => 'Admin',
+                    'access' => true,
+                    'menu' => null
+                ],
+                [
+                    'id' => $r_group['id'],
+                    'name' => $r_group['name'],
+                    'access' => true,
+                    'menu' => null
+                ]
+            ];
+
+
+            $resource = [
+                'pagetitle' => $user->get('fullname'),
+                'alias' => $user->get('username'),
+                'parent' => 2,
+                'profile template_id' => 1,
+                'published' => 1,
+                'class_key' => 'mgResource',
+                'resource_groups' => json_encode($userresource_group)];
+
+            $response = $modx->runProcessor('resource/create', $resource);
+
+            if ($response->isError()) {
+                $modx->log(modX::LOG_LEVEL_ERROR, "Can't create profile page for user: " . print_r($response->getObject(), 1));
+            }
         }
         break;
 
     case 'OnBeforeManagerPageInit':
 
+        // Hide buttons for non-admins
         if ($modx->user->isMember('EFOA Content Editor')) {
             $modx->controller->addHtml('<style>
                 .moregallery_v23 #modx-resource-tree-tbar .tree-new-gallery {
@@ -81,6 +157,7 @@ switch ($modx->event->name) {
                 </style>');
         }
 
+        // Customize profile and user update pages
         if (in_array($action['controller'], ['security/profile', 'security/user/update'])) {
 
             $modx->controller->addHtml('<script type="text/javascript">
@@ -517,6 +594,8 @@ switch ($modx->event->name) {
         break;
 
 	case 'OnMODXInit':
+
+	    // Load additional user fields and lexicons
 	    $modx->lexicon->load('core:efoa');
     	$modx->loadClass('modUserProfile');
         $fields = [
