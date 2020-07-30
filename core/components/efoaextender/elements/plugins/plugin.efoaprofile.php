@@ -333,18 +333,18 @@ switch ($modx->event->name) {
                             id: (config.name || "discipline") + "-store"
                             ,fields: ["display"]
                             ,data: [
-                                ["Painting"]
-                                ,["Ceramics"]
-                                ,["Photography"]
-                                ,["Sculpture"]
-                                ,["Printing"]
-                                ,["Jewellery"]
-                                ,["Glass"]
-                                ,["Textiles"]
-                                ,["Mixed Media"]
-                                ,["Digital Art"]
-                                ,["Film"]
-                                ,["Other Media"]
+                                ["Ceramics"],
+                                ["Digital Art"],
+                                ["Film"],
+                                ["Glass"],
+                                ["Jewellery"],
+                                ["Mixed Media"],
+                                ["Painting"],
+                                ["Photography"],
+                                ["Print Making"],
+                                ["Sculpture"],
+                                ["Textiles"],
+                                ["Other Media"]
                             ]
                         })
                         ,mode: "local"
