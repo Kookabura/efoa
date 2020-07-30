@@ -84,8 +84,10 @@ switch ($modx->event->name) {
 
 
         // Create user profile resource page with username alias. If user profile exists assign it a user's resource group
-        if ($resource = $modx->getObject('modResource', ['alias' => $user->get('username')])) {
-            $modx->log(modX::LOG_LEVEL_INFO, 'Found resource with alias ' . $user->get('username'));
+        // Set the alias to the lowercase fullname replacing spaces with hyphens
+        $resource_alias = strtolower(str_replace(" ", "-", $user->get('username')));
+        if ($resource = $modx->getObject('modResource', ['alias' => $resource_alias)) {
+            $modx->log(modX::LOG_LEVEL_INFO, 'Found resource with alias ' . $resource_alias);
 
             if (!$resource->isMember('profile_' . $resource->get('alias'))) {
                 $response = $modx->runProcessor('security/resourcegroup/updateresourcesin', ['resource' => 'web_' . $resource->get('id'), 'resourceGroup' => 'n_dg_' . $r_group['id']]);
@@ -116,10 +118,8 @@ switch ($modx->event->name) {
             ];
 
             // Set the pagetitle and longtitle to the fullname
-            // Set the alias to the lowercase fullname replacing spaces with hyphens
             // Change parent to be Artists parent ID
             // template_id
-            $resource_alias = strtolower(str_replace(" ", "-", $user->get('username')));
             $resource = [
                 'pagetitle' => $user->get('fullname'),
                 'longtitle' => $user->get('fullname'),
