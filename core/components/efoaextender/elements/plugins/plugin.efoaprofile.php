@@ -341,7 +341,7 @@ switch ($modx->event->name) {
                                 ["Mixed Media"],
                                 ["Painting"],
                                 ["Photography"],
-                                ["Print Making"],
+                                ["Printmaking"],
                                 ["Sculpture"],
                                 ["Textiles"],
                                 ["Other Media"]
