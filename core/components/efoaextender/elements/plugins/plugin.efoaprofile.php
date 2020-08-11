@@ -86,7 +86,7 @@ switch ($modx->event->name) {
         // Create user profile resource page with username alias. If user profile exists assign it a user's resource group
         // Set the alias to the lowercase fullname replacing spaces with hyphens
         $resource_alias = strtolower(str_replace(" ", "-", $user->get('username')));
-        if ($resource = $modx->getObject('modResource', ['alias' => $resource_alias)) {
+        if ($resource = $modx->getObject('modResource', ['alias' => $resource_alias])) {
             $modx->log(modX::LOG_LEVEL_INFO, 'Found resource with alias ' . $resource_alias);
 
             if (!$resource->isMember('profile_' . $resource->get('alias'))) {
