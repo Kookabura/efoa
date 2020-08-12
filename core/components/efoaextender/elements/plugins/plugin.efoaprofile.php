@@ -75,11 +75,11 @@ switch ($modx->event->name) {
 
 
         if (!$user->isMember('EFOA Content Editor')) {
-            $user->joinGroup(2, 1, 9999);
+            $user->joinGroup(2, 1, 1);
         }
 
         if (!$user->isMember($u_group['id'])) {
-            $user->joinGroup($u_group['id'], 1, 9999);
+            $user->joinGroup($u_group['id'], 1, 2);
         }
 
 
