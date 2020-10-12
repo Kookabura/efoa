@@ -17,7 +17,7 @@ switch ($modx->event->name) {
 
         $usergroup = [
             'name'  => 'profile_' . $user->get('username'),
-            'aw_users' => $user->get('username')
+            //'aw_users' => $user->get('username')
         ];
 
         // Creating user group and resorce group if it doesn't exist
