@@ -44,7 +44,7 @@ if ($modx->context->key == 'mgr') {
         $path = 'assets/profiles/';
     }
 } else {
-    $path = str_replace('{user.fullname}', str_replace(['-', ' '],'.',strtolower($modx->resource->get('alias'))), $path);
+    $path = str_replace('{username}', str_replace(['-', ' '],'.',strtolower($modx->resource->get('alias'))), $path);
 }
 
 $fullpath = $modx->getOption('base_path') . $path;
